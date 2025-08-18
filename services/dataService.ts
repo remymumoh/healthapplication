@@ -244,13 +244,13 @@ class DataService {
             const endDateStr = endDate.toISOString().split('T')[0];
 
             const careIndicators = [
-                { reportdept: 'CARE_AND_TREATMENT', modality: 'New_IN_CARE', key: 'newEnrollments' },
-                { reportdept: 'CARE_AND_TREATMENT', modality: 'CURRENT_ON_ART', key: 'activePatients' },
-                { reportdept: 'VL_REGIMEN_OUTCOME', modality: 'TOTAL_TLD', key: 'tldRegimen' },
+                { reportdept: 'CARE_AND_TREATMENT', modality: 'New_IN_CARE', key: 'newlyEnrolled' },
+                { reportdept: 'CARE_AND_TREATMENT', modality: 'CURRENT_ON_ART', key: 'txCurr' },
+                { reportdept: 'VL_REGIMEN_OUTCOME', modality: 'TOTAL_TLD', key: 'tld' },
                 { reportdept: 'VL_ELIGIBILITY', modality: 'TOTAL_ELIGIBILITY', key: 'vlEligibility' },
                 { reportdept: 'VL_UPTAKE', modality: 'TOTAL_UPTAKE', key: 'validVL' },
                 { reportdept: 'VL_SUPPRESSION', modality: 'TOTAL_SUPPRESSION', key: 'vlSuppression' },
-                { reportdept: 'VL_OUTCOME', modality: 'TOTAL_HVL', key: 'hvlOutcome' }
+                { reportdept: 'VL_OUTCOME', modality: 'TOTAL_HVL', key: 'hvl' }
             ];
 
             const results = await Promise.all(
@@ -273,8 +273,8 @@ class DataService {
             );
 
             return {
-                activePatients: results.find(r => r.key === 'activePatients')?.value || 0,
-                newEnrollments: results.find(r => r.key === 'newEnrollments')?.value || 0,
+                activePatients: results.find(r => r.key === 'txCurr')?.value || 0,
+                newEnrollments: results.find(r => r.key === 'newlyEnrolled')?.value || 0,
                 retentionRate: 85, // Calculate from other metrics or set default
                 viralSuppression: results.find(r => r.key === 'vlSuppression')?.value || 0,
                 adherenceRate: 90, // Calculate from other metrics or set default
@@ -391,57 +391,66 @@ class DataService {
         return [
             {
                 id: '1',
-                title: 'Active Patients',
-                value: data.activePatients.toLocaleString(),
-                change: 2.8,
-                changeType: 'increase',
-                icon: 'Users',
-                description: 'Patients currently on treatment'
-            },
-            {
-                id: '2',
-                title: 'New Enrollments',
+                title: 'Newly Enrolled',
                 value: data.newEnrollments.toLocaleString(),
                 change: 4.2,
                 changeType: 'increase',
                 icon: 'UserPlus',
-                description: 'New patients this month'
+                description: 'New patients enrolled this month'
+            },
+            {
+                id: '2',
+                title: 'Tx_Curr',
+                value: data.activePatients.toLocaleString(),
+                change: 2.8,
+                changeType: 'increase',
+                icon: 'Users',
+                description: 'Patients currently on ART'
             },
             {
                 id: '3',
-                title: 'Retention Rate',
-                value: `${data.retentionRate}%`,
-                change: 1.5,
+                title: 'TLD',
+                value: '0', // Will be populated from API
+                change: 1.8,
                 changeType: 'increase',
-                icon: 'Heart',
-                description: 'Patient retention in program'
+                icon: 'Shield',
+                description: 'Patients on TLD regimen'
             },
             {
                 id: '4',
-                title: 'Viral Suppression',
-                value: `${data.viralSuppression}%`,
+                title: 'VL Eligibility',
+                value: '0', // Will be populated from API
+                change: 1.5,
+                changeType: 'increase',
+                icon: 'Target',
+                description: 'Patients eligible for VL testing'
+            },
+            {
+                id: '5',
+                title: 'Valid VL',
+                value: '0', // Will be populated from API
                 change: 0.8,
+                changeType: 'increase',
+                icon: 'Activity',
+                description: 'Valid viral load tests conducted'
+            },
+            {
+                id: '6',
+                title: 'VL Suppression',
+                value: `${data.viralSuppression}%`,
+                change: 2.1,
                 changeType: 'increase',
                 icon: 'Shield',
                 description: 'Patients with suppressed viral load'
             },
             {
-                id: '5',
-                title: 'Adherence Rate',
-                value: `${data.adherenceRate}%`,
-                change: -0.5,
-                changeType: 'decrease',
-                icon: 'Clock',
-                description: 'Treatment adherence rate'
-            },
-            {
-                id: '6',
-                title: 'Lost to Follow-up',
-                value: data.lostToFollowUp.toLocaleString(),
-                change: -12.3,
+                id: '7',
+                title: 'HVL',
+                value: '0', // Will be populated from API
+                change: -1.2,
                 changeType: 'decrease',
                 icon: 'AlertTriangle',
-                description: 'Patients lost to follow-up'
+                description: 'High viral load outcomes'
             }
         ];
     }
