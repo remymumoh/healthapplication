@@ -70,7 +70,12 @@ export function useDataStore() {
     // Load dashboard cards when filters or category change
     useEffect(() => {
         const loadDashboardData = async () => {
-            setState(prev => ({ ...prev, loading: true }));
+            // Only set loading if we don't already have cards for this combination
+            const hasExistingData = state.dashboardCards.length > 0;
+            if (!hasExistingData) {
+                setState(prev => ({ ...prev, loading: true }));
+            }
+            
             try {
                 let cards: DashboardCard[] = [];
 
@@ -100,7 +105,12 @@ export function useDataStore() {
             }
         };
 
-        loadDashboardData();
+        // Add a small delay to prevent rapid successive calls
+        const timeoutId = setTimeout(() => {
+            loadDashboardData();
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
     }, [state.filterState.category, state.filterState.selectedCounty, state.filterState.selectedFacility]);
 
     const selectCounty = (countyId: string | null) => {
