@@ -13,7 +13,7 @@ export default function DashboardScreen() {
     const { counties, facilities, dashboardCards, loading, filterState, selectCounty, selectFacility, setCategory } =
         useDataStore()
 
-    const [showSidebar, setShowSidebar] = useState(isLargeScreen)
+    const [showSidebar, setShowSidebar] = useState(false)
 
     useEffect(() => {
         if (filterState.category !== "dashboard") {
@@ -21,20 +21,12 @@ export default function DashboardScreen() {
         }
     }, [filterState.category, setCategory])
 
-    useEffect(() => {
-        if (isLargeScreen) {
-            setShowSidebar(true)
-        }
-    }, [isLargeScreen])
-
     const toggleSidebar = () => {
         setShowSidebar(!showSidebar)
     }
 
     const closeSidebar = () => {
-        if (!isLargeScreen) {
-            setShowSidebar(false)
-        }
+        setShowSidebar(false)
     }
 
     const getActiveFiltersCount = () => {
@@ -98,7 +90,7 @@ export default function DashboardScreen() {
             </View>
 
             {/* Overlay for mobile when sidebar is open */}
-            {showSidebar && !isLargeScreen && (
+            {showSidebar && (
                 <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeSidebar} />
             )}
         </SafeAreaView>
@@ -122,6 +114,6 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 1,
+        zIndex: 10,
     },
 })

@@ -331,6 +331,10 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: "#e5e7eb",
     height: "100%",
+    position: "absolute",
+    left: 0,
+    top: 0,
+    zIndex: 20,
     shadowColor: "#000",
     shadowOffset: {
       width: 2,
