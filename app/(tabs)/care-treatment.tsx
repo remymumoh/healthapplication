@@ -18,8 +18,10 @@ export default function CareAndTreatmentScreen() {
   const [showSidebar, setShowSidebar] = useState(isLargeScreen)
 
   useEffect(() => {
-    setCategory("care-treatment")
-  }, [setCategory])
+    if (filterState.category !== "care-treatment") {
+      setCategory("care-treatment")
+    }
+  }, [filterState.category, setCategory])
 
   useEffect(() => {
     if (isLargeScreen) {

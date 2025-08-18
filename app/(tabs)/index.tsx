@@ -16,8 +16,10 @@ export default function DashboardScreen() {
     const [showSidebar, setShowSidebar] = useState(isLargeScreen)
 
     useEffect(() => {
-        setCategory("dashboard")
-    }, [setCategory])
+        if (filterState.category !== "dashboard") {
+            setCategory("dashboard")
+        }
+    }, [filterState.category, setCategory])
 
     useEffect(() => {
         if (isLargeScreen) {

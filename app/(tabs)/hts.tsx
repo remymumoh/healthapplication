@@ -18,8 +18,10 @@ export default function HTSScreen() {
   const [showSidebar, setShowSidebar] = useState(isLargeScreen)
 
   useEffect(() => {
-    setCategory("hts")
-  }, [setCategory])
+    if (filterState.category !== "hts") {
+      setCategory("hts")
+    }
+  }, [filterState.category, setCategory])
 
   useEffect(() => {
     if (isLargeScreen) {

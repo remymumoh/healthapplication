@@ -15,6 +15,23 @@ class DataService {
     private countiesCache: County[] = [];
     private facilitiesCache: Map<string, Facility[]> = new Map();
 
+    // Fallback data for when API is unreachable
+    private fallbackCounties: County[] = [
+        { id: '1', name: 'Nairobi', code: 'NAI' },
+        { id: '2', name: 'Mombasa', code: 'MSA' },
+        { id: '3', name: 'Kisumu', code: 'KSM' },
+        { id: '4', name: 'Nakuru', code: 'NAK' },
+        { id: '5', name: 'Eldoret', code: 'ELD' }
+    ];
+
+    private fallbackFacilities: Facility[] = [
+        { id: '10001', name: 'Kenyatta National Hospital', type: 'Hospital', county: '1', location: { latitude: 0, longitude: 0 } },
+        { id: '10002', name: 'Nairobi Hospital', type: 'Hospital', county: '1', location: { latitude: 0, longitude: 0 } },
+        { id: '10003', name: 'Pumwani Maternity Hospital', type: 'Hospital', county: '1', location: { latitude: 0, longitude: 0 } },
+        { id: '20001', name: 'Coast General Hospital', type: 'Hospital', county: '2', location: { latitude: 0, longitude: 0 } },
+        { id: '20002', name: 'Aga Khan Hospital Mombasa', type: 'Hospital', county: '2', location: { latitude: 0, longitude: 0 } }
+    ];
+
     private htsIndicators: HTSIndicator[] = [
         {
             id: '1',
@@ -65,7 +82,18 @@ class DataService {
             return locations;
         } catch (error) {
             console.error('Error fetching locations:', error);
-            return [];
+            // Return fallback data when API is unreachable
+            this.locationsCache = this.fallbackCounties.flatMap(county => 
+                this.fallbackFacilities
+                    .filter(facility => facility.county === county.id)
+                    .map(facility => ({
+                        mflcode: facility.id,
+                        facility: facility.name,
+                        county: county.name,
+                        type: facility.type
+                    }))
+            );
+            return this.locationsCache;
         }
     }
 
@@ -87,7 +115,9 @@ class DataService {
             return this.countiesCache;
         } catch (error) {
             console.error('Error processing counties:', error);
-            return [];
+            // Return fallback counties when API is unreachable
+            this.countiesCache = this.fallbackCounties;
+            return this.countiesCache;
         }
     }
 
@@ -122,7 +152,10 @@ class DataService {
             return countyFacilities;
         } catch (error) {
             console.error('Error fetching facilities:', error);
-            return [];
+            // Return fallback facilities for the county
+            const fallbackForCounty = this.fallbackFacilities.filter(f => f.county === countyId);
+            this.facilitiesCache.set(countyId, fallbackForCounty);
+            return fallbackForCounty;
         }
     }
 
