@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from "react-native"
-import { MapPin, Building2, X, ChartBar as BarChart3, Activity, Heart, Settings, User, FileText, Shield, CircleHelp as HelpCircle, Info, LogOut, ChevronRight, Search, ChevronDown, ChevronUp } from "lucide-react-native"
+import { MapPin, Building2, X, Search, ChevronRight, Calendar } from "lucide-react-native"
 import { useState, useMemo } from "react"
 import type { County, Facility, CategoryType } from "@/types"
 import CalendarFilter from "./CalendarFilter"
@@ -23,68 +23,45 @@ export function FilterSidebar({
   facilities,
   selectedCounty,
   selectedFacility,
-  selectedCategory,
   onSelectCounty,
   onSelectFacility,
-  onSelectCategory,
   loading,
   isVisible,
   onClose,
 }: Props) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [expandedCounties, setExpandedCounties] = useState<Set<string>>(new Set())
+  const [expandedCounty, setExpandedCounty] = useState<string | null>(null)
 
-  // Filter counties and facilities based on search query
+  // Filter counties based on search query
   const filteredCounties = useMemo(() => {
     if (!searchQuery.trim()) return counties
     return counties.filter(county => 
-      county.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      county.code.toLowerCase().includes(searchQuery.toLowerCase())
+      county.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
   }, [counties, searchQuery])
 
-  const filteredFacilities = useMemo(() => {
-    if (!searchQuery.trim()) return facilities
-    return facilities.filter(facility => 
-      facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      facility.type.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [facilities, searchQuery])
-
   // Get facilities for a specific county
   const getFacilitiesForCounty = (countyId: string) => {
-    return filteredFacilities.filter(facility => facility.county === countyId)
+    return facilities.filter(facility => facility.county === countyId)
   }
 
   if (!isVisible) return null
 
-  const handleCategorySelect = (category: CategoryType) => {
-    onSelectCategory(category)
-    // Auto-close sidebar on mobile after selection
-    onClose()
-  }
-
-  const handleCountySelect = (countyId: string | null) => {
-    onSelectCounty(countyId)
-    // Clear search when selecting a county
-    setSearchQuery("")
-    // Don't auto-close when selecting county, user might want to select facility
-  }
-
-  const handleFacilitySelect = (facilityId: string | null) => {
-    onSelectFacility(facilityId)
-    // Auto-close sidebar after facility selection
-    onClose()
-  }
-
-  const toggleCountyExpansion = (countyId: string) => {
-    const newExpanded = new Set(expandedCounties)
-    if (newExpanded.has(countyId)) {
-      newExpanded.delete(countyId)
+  const handleCountySelect = (county: County) => {
+    if (expandedCounty === county.id) {
+      // If clicking on already expanded county, collapse it
+      setExpandedCounty(null)
+      onSelectCounty(null)
     } else {
-      newExpanded.add(countyId)
+      // Expand the county and load its facilities
+      setExpandedCounty(county.id)
+      onSelectCounty(county.id)
     }
-    setExpandedCounties(newExpanded)
+  }
+
+  const handleFacilitySelect = (facility: Facility) => {
+    onSelectFacility(facility.id)
+    onClose() // Close drawer after facility selection
   }
 
   const clearSearch = () => {
@@ -93,15 +70,27 @@ export function FilterSidebar({
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Healthcare Dashboard</Text>
+        <View style={styles.headerContent}>
+          <MapPin size={24} color="#ffffff" />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Healthcare Facilities</Text>
+            <Text style={styles.headerSubtitle}>Browse by location</Text>
+          </View>
+        </View>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={onClose}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <X size={20} color="#6b7280" />
+          <X size={24} color="#ffffff" />
         </TouchableOpacity>
+      </View>
+
+      {/* Date Range Selector */}
+      <View style={styles.dateSection}>
+        <CalendarFilter />
       </View>
 
       {/* Search Bar */}
@@ -110,7 +99,7 @@ export function FilterSidebar({
           <Search size={16} color="#9ca3af" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search counties or facilities..."
+            placeholder="Search counties..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#9ca3af"
@@ -123,138 +112,88 @@ export function FilterSidebar({
         </View>
       </View>
 
-      {/* Calendar Filter */}
-      <View style={styles.calendarSection}>
-        <CalendarFilter />
-      </View>
-
+      {/* Counties List */}
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Main Navigation */}
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleCategorySelect("hts")}>
-            <Activity size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={[styles.menuText, selectedCategory === "hts" && styles.activeMenuText]}>HTS Services</Text>
-            {selectedCategory === "hts" && <View style={styles.activeDot} />}
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleCategorySelect("care-treatment")}>
-            <Heart size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={[styles.menuText, selectedCategory === "care-treatment" && styles.activeMenuText]}>
-              Care & Treatment
-            </Text>
-            {selectedCategory === "care-treatment" && <View style={styles.activeDot} />}
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <BarChart3 size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Dashboard Overview</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <FileText size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Reports</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Location Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleCountySelect(null)}>
-            <MapPin size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={[styles.menuText, !selectedCounty && styles.activeMenuText]}>All Counties</Text>
-            {!selectedCounty && <View style={styles.activeDot} />}
-          </TouchableOpacity>
-
+        <View style={styles.countiesList}>
           {filteredCounties.map((county) => {
             const countyFacilities = getFacilitiesForCounty(county.id)
-            const isExpanded = expandedCounties.has(county.id)
-            const isSelected = selectedCounty === county.id
+            const isExpanded = expandedCounty === county.id
 
             return (
-              <View key={county.id}>
-                <TouchableOpacity 
-                  style={styles.menuItem} 
-                  onPress={() => {
-                    handleCountySelect(county.id)
-                    if (countyFacilities.length > 0) {
-                      toggleCountyExpansion(county.id)
-                    }
-                  }}
+              <View key={county.id} style={styles.countyContainer}>
+                {/* County Item */}
+                <TouchableOpacity
+                  style={[
+                    styles.countyItem,
+                    isExpanded && styles.countyItemExpanded
+                  ]}
+                  onPress={() => handleCountySelect(county)}
+                  activeOpacity={0.7}
                 >
-                  <MapPin size={20} color="#374151" style={styles.menuIcon} />
-                  <View style={styles.menuContent}>
-                    <Text style={[styles.menuText, isSelected && styles.activeMenuText]}>
-                      {county.name}
-                    </Text>
-                    <Text style={styles.countyCode}>
-                      {county.code} • {countyFacilities.length} facilities
+                  <View style={styles.countyIcon}>
+                    <MapPin size={20} color="#3b82f6" />
+                  </View>
+                  <View style={styles.countyContent}>
+                    <Text style={styles.countyName}>{county.name}</Text>
+                    <Text style={styles.facilityCount}>
+                      {countyFacilities.length} facilities
                     </Text>
                   </View>
-                  {isSelected && <View style={styles.activeDot} />}
-                  {countyFacilities.length > 0 && (
-                    <TouchableOpacity 
-                      onPress={() => toggleCountyExpansion(county.id)}
-                      style={styles.expandButton}
-                    >
-                      {isExpanded ? (
-                        <ChevronUp size={16} color="#9ca3af" />
-                      ) : (
-                        <ChevronDown size={16} color="#9ca3af" />
-                      )}
-                    </TouchableOpacity>
-                  )}
+                  <ChevronRight 
+                    size={20} 
+                    color="#9ca3af" 
+                    style={[
+                      styles.chevron,
+                      isExpanded && styles.chevronExpanded
+                    ]} 
+                  />
                 </TouchableOpacity>
 
-                {/* Facilities for this county */}
-                {isExpanded && countyFacilities.length > 0 && (
+                {/* Facilities List */}
+                {isExpanded && (
                   <View style={styles.facilitiesContainer}>
-                    <TouchableOpacity 
-                      style={styles.facilityItem} 
-                      onPress={() => handleFacilitySelect(null)}
-                    >
-                      <Building2 size={18} color="#6b7280" style={styles.facilityIcon} />
-                      <Text style={[styles.facilityText, !selectedFacility && styles.activeFacilityText]}>
-                        All Facilities
-                      </Text>
-                      {!selectedFacility && <View style={styles.activeDot} />}
-                    </TouchableOpacity>
-
-                    {countyFacilities.map((facility) => (
-                      <TouchableOpacity
-                        key={facility.id}
-                        style={styles.facilityItem}
-                        onPress={() => handleFacilitySelect(facility.id)}
-                      >
-                        <Building2 size={18} color="#6b7280" style={styles.facilityIcon} />
-                        <View style={styles.facilityContent}>
-                          <Text style={[
-                            styles.facilityText, 
-                            selectedFacility === facility.id && styles.activeFacilityText
-                          ]}>
-                            {facility.name}
-                          </Text>
-                          <Text style={styles.facilityType}>{facility.type}</Text>
-                        </View>
-                        {selectedFacility === facility.id && <View style={styles.activeDot} />}
-                      </TouchableOpacity>
-                    ))}
+                    {loading ? (
+                      <View style={styles.loadingContainer}>
+                        <Text style={styles.loadingText}>Loading facilities...</Text>
+                      </View>
+                    ) : countyFacilities.length > 0 ? (
+                      countyFacilities.map((facility) => (
+                        <TouchableOpacity
+                          key={facility.id}
+                          style={[
+                            styles.facilityItem,
+                            selectedFacility === facility.id && styles.facilityItemSelected
+                          ]}
+                          onPress={() => handleFacilitySelect(facility)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.facilityIcon}>
+                            <Building2 size={16} color="#6b7280" />
+                          </View>
+                          <View style={styles.facilityContent}>
+                            <Text style={[
+                              styles.facilityName,
+                              selectedFacility === facility.id && styles.facilityNameSelected
+                            ]}>
+                              {facility.name}
+                            </Text>
+                            <Text style={styles.facilityType}>{facility.type}</Text>
+                          </View>
+                          {selectedFacility === facility.id && (
+                            <View style={styles.selectedIndicator} />
+                          )}
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No facilities found</Text>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
             )
           })}
-
-          {/* Show loading state for facilities */}
-          {loading && selectedCounty && (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading facilities...</Text>
-            </View>
-          )}
 
           {/* Show empty state when no results found */}
           {searchQuery.length > 0 && filteredCounties.length === 0 && (
@@ -263,68 +202,6 @@ export function FilterSidebar({
             </View>
           )}
         </View>
-
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <User size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Profile</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <FileText size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Export Data</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Settings size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Preferences</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Privacy Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy</Text>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Shield size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Privacy Policy</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Shield size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Data Protection</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-        </View>
-
-        {/* More Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>More</Text>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <HelpCircle size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Help & Support</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Info size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>About</Text>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <LogOut size={20} color="#374151" style={styles.menuIcon} />
-            <Text style={styles.menuText}>Sign out</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </View>
   )
@@ -332,10 +209,8 @@ export function FilterSidebar({
 
 const styles = StyleSheet.create({
   container: {
-    width: 300,
-    backgroundColor: "#f8fafc",
-    borderRightWidth: 1,
-    borderRightColor: "#e5e7eb",
+    width: 320,
+    backgroundColor: "#ffffff",
     height: "100%",
     position: "absolute",
     left: 0,
@@ -346,41 +221,62 @@ const styles = StyleSheet.create({
       width: 2,
       height: 0,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    backgroundColor: "#ffffff",
+    paddingTop: 24,
+    backgroundColor: "#3b82f6",
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  headerText: {
+    marginLeft: 12,
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 16,
-    fontFamily: "Inter-SemiBold",
-    color: "#111827",
+    fontSize: 18,
+    fontFamily: "Inter-Bold",
+    color: "#ffffff",
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontFamily: "Inter-Regular",
+    color: "#bfdbfe",
   },
   closeButton: {
     padding: 4,
+  },
+  dateSection: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+    backgroundColor: "#ffffff",
   },
   searchContainer: {
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
+    backgroundColor: "#ffffff",
   },
   searchInputContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f9fafb",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   searchIcon: {
     marginRight: 8,
@@ -390,106 +286,121 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter-Regular",
     color: "#374151",
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   clearButton: {
     padding: 4,
     marginLeft: 8,
   },
-  calendarSection: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    backgroundColor: "#ffffff",
-  },
   scrollView: {
     flex: 1,
+    backgroundColor: "#ffffff",
   },
-  section: {
-    paddingVertical: 8,
+  countiesList: {
+    padding: 16,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontFamily: "Inter-SemiBold",
-    color: "#111827",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: "#f9fafb",
+  countyContainer: {
+    marginBottom: 8,
   },
-  menuItem: {
+  countyItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    position: "relative",
+    padding: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  menuIcon: {
-    marginRight: 16,
+  countyItemExpanded: {
+    borderColor: "#3b82f6",
+    backgroundColor: "#eff6ff",
   },
-  menuContent: {
+  countyIcon: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#eff6ff",
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  countyContent: {
     flex: 1,
   },
-  menuText: {
+  countyName: {
     fontSize: 16,
+    fontFamily: "Inter-SemiBold",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  facilityCount: {
+    fontSize: 13,
     fontFamily: "Inter-Regular",
-    color: "#374151",
-    flex: 1,
+    color: "#6b7280",
   },
-  activeMenuText: {
-    color: "#3b82f6",
-    fontFamily: "Inter-Medium",
-  },
-  activeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#3b82f6",
-    marginRight: 8,
-  },
-  countyCode: {
-    fontSize: 12,
-    fontFamily: "Inter-Regular",
-    color: "#9ca3af",
-    marginTop: 2,
-  },
-  expandButton: {
-    padding: 4,
+  chevron: {
     marginLeft: 8,
   },
+  chevronExpanded: {
+    transform: [{ rotate: "90deg" }],
+  },
   facilitiesContainer: {
+    marginTop: 8,
+    marginLeft: 52,
     backgroundColor: "#f9fafb",
-    marginLeft: 20,
-    borderLeftWidth: 2,
-    borderLeftColor: "#e5e7eb",
+    borderRadius: 8,
+    overflow: "hidden",
   },
   facilityItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    paddingLeft: 20,
-    position: "relative",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  facilityItemSelected: {
+    backgroundColor: "#eff6ff",
   },
   facilityIcon: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   facilityContent: {
     flex: 1,
   },
-  facilityText: {
+  facilityName: {
     fontSize: 14,
-    fontFamily: "Inter-Regular",
-    color: "#6b7280",
-  },
-  activeFacilityText: {
-    color: "#3b82f6",
     fontFamily: "Inter-Medium",
+    color: "#374151",
+    marginBottom: 2,
+  },
+  facilityNameSelected: {
+    color: "#3b82f6",
   },
   facilityType: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "Inter-Regular",
     color: "#9ca3af",
-    marginTop: 2,
+  },
+  selectedIndicator: {
+    width: 8,
+    height: 8,
+    backgroundColor: "#3b82f6",
+    borderRadius: 4,
+    marginLeft: 8,
   },
   loadingContainer: {
     padding: 20,

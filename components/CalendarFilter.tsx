@@ -193,17 +193,17 @@ export default function CalendarFilter() {
   return (
     <>
       <TouchableOpacity
-        style={styles.filterButton}
+        style={styles.periodButton}
         onPress={() => setIsModalVisible(true)}
         activeOpacity={0.8}
       >
-        <View style={styles.filterButtonContent}>
-          <Calendar size={20} color="#3b82f6" />
-          <View style={styles.filterTextContainer}>
-            <Text style={styles.filterLabel}>Period</Text>
-            <Text style={styles.filterValue}>{formatDateRange(selectedDateRange)}</Text>
+        <View style={styles.periodButtonContent}>
+          <Calendar size={18} color="#6b7280" />
+          <View style={styles.periodTextContainer}>
+            <Text style={styles.periodLabel}>Period</Text>
+            <Text style={styles.periodValue}>{formatDateRange(selectedDateRange)}</Text>
           </View>
-          <ChevronDown size={20} color="#6b7280" />
+          <ChevronDown size={16} color="#9ca3af" />
         </View>
       </TouchableOpacity>
 
@@ -291,34 +291,29 @@ export default function CalendarFilter() {
 }
 
 const styles = StyleSheet.create({
-  filterButton: {
+  periodButton: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  filterButtonContent: {
+  periodButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
   },
-  filterTextContainer: {
+  periodTextContainer: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 8,
   },
-  filterLabel: {
-    fontSize: 12,
+  periodLabel: {
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#6b7280',
-    marginBottom: 2,
+    marginBottom: 1,
   },
-  filterValue: {
-    fontSize: 16,
+  periodValue: {
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
   },
