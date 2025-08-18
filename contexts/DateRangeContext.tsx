@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-interface DateRange {
+export interface DateRange {
     startDate: Date;
     endDate: Date;
+    label: string;
 }
 
 interface DateRangeContextType {
@@ -16,6 +17,7 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
     const [selectedDateRange, setSelectedDateRange] = useState<DateRange>({
         startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
         endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+        label: `${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
     });
 
     return (

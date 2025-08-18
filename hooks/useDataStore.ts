@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { County, Facility, DashboardCard, CategoryType, FilterState } from '@/types';
 import { dataService } from '@/services/dataService';
+import { useDateRange } from '@/contexts/DateRangeContext';
 
 interface DataStoreState {
     counties: County[];
@@ -12,6 +13,7 @@ interface DataStoreState {
 }
 
 export function useDataStore() {
+    const { selectedDateRange } = useDateRange();
     const [state, setState] = useState<DataStoreState>({
         counties: [],
         facilities: [],
@@ -27,6 +29,7 @@ export function useDataStore() {
 
     // Destructure primitive values to prevent infinite re-renders
     const { selectedCounty, selectedFacility, category } = state.filterState;
+    const { startDate, endDate } = selectedDateRange;
 
     // Load initial data
     useEffect(() => {
@@ -93,7 +96,7 @@ export function useDataStore() {
                 let cards: DashboardCard[] = [];
 
                 if (category === 'hts') {
-                    const htsData = await dataService.getHTSData(selectedFacility || undefined);
+                    const htsData = await dataService.getHTSDataWithDateRange(selectedFacility || undefined, startDate, endDate);
                     cards = dataService.convertHTSToCards(htsData);
                 } else if (category === 'care-treatment') {
                     const careData = await dataService.getCareAndTreatmentData(selectedFacility || undefined);
@@ -122,7 +125,7 @@ export function useDataStore() {
         };
 
         loadDashboardData();
-    }, [category, selectedCounty, selectedFacility]);
+    }, [category, selectedCounty, selectedFacility, startDate, endDate]);
 
     const selectCounty = (countyId: string | null) => {
         setState(prev => ({

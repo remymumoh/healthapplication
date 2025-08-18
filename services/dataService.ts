@@ -180,17 +180,19 @@ class DataService {
     async getHTSData(facilityId?: string): Promise<HTSData> {
         try {
             const locationId = facilityId || 'ALL';
+            
+            // Use current month as default if no date range is provided
             const currentDate = new Date();
-            const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-            const startDateStr = startDate.toISOString().split('T')[0];
-            const endDateStr = endDate.toISOString().split('T')[0];
+            const defaultStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const defaultEndDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            
+            const startDateStr = defaultStartDate.toISOString().split('T')[0];
+            const endDateStr = defaultEndDate.toISOString().split('T')[0];
 
             const results = await Promise.all(
                 this.htsIndicators.map(async (indicator) => {
                     try {
-                        const url = `${API_BASE_URL}/summary/?reportdept=${indicator.reportdept}&modality=${indicator.modality}&locationid=${locationId}&startdate=${startDateStr}&enddate=${endDateStr}`;
+                        const url = `${FALLBACK_API_URL}/summary/total/?reportdept=${indicator.reportdept}&modality=${indicator.modality}&locationid=${locationId}&startdate=${startDateStr}&enddate=${endDateStr}`;
                         const response = await fetch(url);
 
                         if (!response.ok) {
@@ -233,6 +235,65 @@ class DataService {
         }
     }
 
+    async getHTSDataWithDateRange(facilityId?: string, startDate?: Date, endDate?: Date): Promise<HTSData> {
+        try {
+            const locationId = facilityId || 'ALL';
+            const startDateStr = startDate ? startDate.toISOString().split('T')[0] : new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+            const endDateStr = endDate ? endDate.toISOString().split('T')[0] : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+
+            const results = await Promise.all(
+                this.htsIndicators.map(async (indicator) => {
+                    try {
+                        const url = `${FALLBACK_API_URL}/summary/total/?reportdept=${indicator.reportdept}&modality=${indicator.modality}&locationid=${locationId}&startdate=${startDateStr}&enddate=${endDateStr}`;
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                            mode: 'cors'
+                        });
+
+                        if (!response.ok) {
+                            console.warn(`Failed to fetch ${indicator.title}: ${response.status}`);
+                            return { indicator, value: 0 };
+                        }
+
+                        const data = await response.json();
+                        const value = Array.isArray(data) && data.length > 0 ? (data[0].total || 0) : 0;
+                        return { indicator, value };
+                    } catch (error) {
+                        console.error(`Error fetching ${indicator.title}:`, error);
+                        return { indicator, value: 0 };
+                    }
+                })
+            );
+
+            const totalTests = results.find(r => r.indicator.modality === 'NEW_TESTING')?.value || 0;
+            const positiveTests = results.find(r => r.indicator.modality === 'REPEAT_TESTING')?.value || 0;
+            const negativeTests = totalTests - positiveTests;
+
+            return {
+                totalTests,
+                positiveTests,
+                negativeTests,
+                testingRate: totalTests > 0 ? ((totalTests / 1000) * 100) : 0,
+                monthlyGrowth: 5.7,
+                targetAchievement: totalTests > 0 ? Math.min((totalTests / 500) * 100, 100) : 0,
+            };
+        } catch (error) {
+            console.error('Error fetching HTS data with date range:', error);
+            return {
+                totalTests: 0,
+                positiveTests: 0,
+                negativeTests: 0,
+                testingRate: 0,
+                monthlyGrowth: 0,
+                targetAchievement: 0,
+            };
+        }
+    }
+
     async getCareAndTreatmentData(facilityId?: string): Promise<CareAndTreatmentData> {
         try {
             const locationId = facilityId || 'ALL';
@@ -256,7 +317,7 @@ class DataService {
             const results = await Promise.all(
                 careIndicators.map(async (indicator) => {
                     try {
-                        const url = `${FALLBACK_API_URL}/summary/?reportdept=${indicator.reportdept}&modality=${indicator.modality}&locationid=${locationId}&startdate=${startDateStr}&enddate=${endDateStr}`;
+                        const url = `${FALLBACK_API_URL}/summary/total/?reportdept=${indicator.reportdept}&modality=${indicator.modality}&locationid=${locationId}&startdate=${startDateStr}&enddate=${endDateStr}`;
                         const response = await fetch(url);
 
                         if (!response.ok) {
@@ -313,7 +374,7 @@ class DataService {
             const results = await Promise.all(
                 dashboardIndicators.map(async (indicator) => {
                     try {
-                        const url = `${API_BASE_URL}/summary/?reportdept=${indicator.reportdept}&modality=${indicator.modality}&locationid=${locationId}&startdate=${startDateStr}&enddate=${endDateStr}`;
+                        const url = `${FALLBACK_API_URL}/summary/total/?reportdept=${indicator.reportdept}&modality=${indicator.modality}&locationid=${locationId}&startdate=${startDateStr}&enddate=${endDateStr}`;
                         const response = await fetch(url);
 
                         if (!response.ok) {

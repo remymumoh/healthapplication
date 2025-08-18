@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 
 import { MapPin, Building2, X, ChartBar as BarChart3, Activity, Heart, Settings, User, FileText, Shield, CircleHelp as HelpCircle, Info, LogOut, ChevronRight, Search, ChevronDown, ChevronUp } from "lucide-react-native"
 import { useState, useMemo } from "react"
 import type { County, Facility, CategoryType } from "@/types"
+import CalendarFilter from "./CalendarFilter"
 
 interface Props {
   counties: County[]
@@ -120,6 +121,11 @@ export function FilterSidebar({
             </TouchableOpacity>
           )}
         </View>
+      </View>
+
+      {/* Calendar Filter */}
+      <View style={styles.calendarSection}>
+        <CalendarFilter />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -389,6 +395,12 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 4,
     marginLeft: 8,
+  },
+  calendarSection: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+    backgroundColor: "#ffffff",
   },
   scrollView: {
     flex: 1,
