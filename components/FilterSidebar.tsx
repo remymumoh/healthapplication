@@ -33,6 +33,28 @@ export function FilterSidebar({
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedCounties, setExpandedCounties] = useState<Set<string>>(new Set())
 
+  // Filter counties and facilities based on search query
+  const filteredCounties = useMemo(() => {
+    if (!searchQuery.trim()) return counties
+    return counties.filter(county => 
+      county.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      county.code.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [counties, searchQuery])
+
+  const filteredFacilities = useMemo(() => {
+    if (!searchQuery.trim()) return facilities
+    return facilities.filter(facility => 
+      facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      facility.type.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [facilities, searchQuery])
+
+  // Get facilities for a specific county
+  const getFacilitiesForCounty = (countyId: string) => {
+    return filteredFacilities.filter(facility => facility.county === countyId)
+  }
+
   if (!isVisible) return null
 
   const handleCategorySelect = (category: CategoryType) => {
@@ -62,28 +84,6 @@ export function FilterSidebar({
       newExpanded.add(countyId)
     }
     setExpandedCounties(newExpanded)
-  }
-
-  // Filter counties and facilities based on search query
-  const filteredCounties = useMemo(() => {
-    if (!searchQuery.trim()) return counties
-    return counties.filter(county => 
-      county.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      county.code.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [counties, searchQuery])
-
-  const filteredFacilities = useMemo(() => {
-    if (!searchQuery.trim()) return facilities
-    return facilities.filter(facility => 
-      facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      facility.type.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [facilities, searchQuery])
-
-  // Get facilities for a specific county
-  const getFacilitiesForCounty = (countyId: string) => {
-    return filteredFacilities.filter(facility => facility.county === countyId)
   }
 
   const clearSearch = () => {
