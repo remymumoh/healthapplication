@@ -1,5 +1,5 @@
 import { County, Facility, HTSData, CareAndTreatmentData, DashboardCard, DashboardData, APILocation } from '@/types';
-import { API_BASE_URL } from '@/constants/api';
+import { API_BASE_URL, FALLBACK_API_URL } from '@/constants/api';
 
 interface HTSIndicator {
     id: string;
@@ -73,7 +73,22 @@ class DataService {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/locations/`);
+            // Try primary API first, then fallback
+            let response;
+            try {
+                response = await fetch(`${FALLBACK_API_URL}/locations/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    mode: 'cors'
+                });
+            } catch (primaryError) {
+                console.warn('Primary API unavailable, using fallback data');
+                throw primaryError;
+            }
+            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -81,7 +96,7 @@ class DataService {
             this.locationsCache = locations;
             return locations;
         } catch (error) {
-            console.error('Error fetching locations:', error);
+            console.warn('API unavailable, using fallback data:', error);
             // Return fallback data when API is unreachable
             this.locationsCache = this.fallbackCounties.flatMap(county => 
                 this.fallbackFacilities
