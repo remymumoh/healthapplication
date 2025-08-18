@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { DashboardGrid } from './DashboardGrid';
-import { County, Facility, DashboardCard, CategoryType, HTSData, CareAndTreatmentData } from '@/types';
-import { dataService } from '@/services/dataService';
+import { County, Facility, DashboardCard, CategoryType } from '@/types';
 
 interface Props {
     category: CategoryType;
@@ -23,39 +22,7 @@ export function MainContent({
                                 dashboardCards,
                                 loading
                             }: Props) {
-    const [cards, setCards] = useState<DashboardCard[]>([]);
-    const [dataLoading, setDataLoading] = useState(false);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            setDataLoading(true);
-            try {
-                let newCards: DashboardCard[] = [];
-
-                if (category === 'hts') {
-                    const htsData = await dataService.getHTSData(selectedFacility || undefined);
-                    newCards = dataService.convertHTSToCards(htsData);
-                } else if (category === 'care-treatment') {
-                    const careData = await dataService.getCareAndTreatmentData(selectedFacility || undefined);
-                    newCards = dataService.convertCareAndTreatmentToCards(careData);
-                } else if (category === 'dashboard') {
-                    const dashboardData = await dataService.getDashboardData(selectedFacility || undefined);
-                    newCards = dataService.convertDashboardToCards(dashboardData);
-                }
-
-                setCards(newCards);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                setCards([]);
-            } finally {
-                setDataLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [category, selectedCounty, selectedFacility]);
-
-    if (loading || dataLoading) {
+    if (loading) {
         return (
             <View style={styles.container}>
                 <View style={styles.loadingContainer}>
@@ -68,7 +35,7 @@ export function MainContent({
 
     return (
         <View style={styles.container}>
-            <DashboardGrid cards={cards} loading={dataLoading} />
+            <DashboardGrid cards={dashboardCards} loading={loading} />
         </View>
     );
 }
