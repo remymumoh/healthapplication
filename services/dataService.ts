@@ -90,7 +90,10 @@ class DataService {
                         mflcode: facility.id,
                         facility: facility.name,
                         county: county.name,
+                        subcounty: 'Default Subcounty',
+                        ward: 'Default Ward',
                         type: facility.type
+                        program: 'HTS'
                     }))
             );
             return this.locationsCache;
