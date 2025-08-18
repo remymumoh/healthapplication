@@ -327,7 +327,7 @@ export function FilterSidebar({
 const styles = StyleSheet.create({
   container: {
     width: 300,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#f8fafc",
     borderRightWidth: 1,
     borderRightColor: "#e5e7eb",
     height: "100%",
