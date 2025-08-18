@@ -7,6 +7,7 @@ interface DataStoreState {
     facilities: Facility[];
     dashboardCards: DashboardCard[];
     loading: boolean;
+    error: string | null;
     filterState: FilterState;
 }
 
@@ -16,6 +17,7 @@ export function useDataStore() {
         facilities: [],
         dashboardCards: [],
         loading: true,
+        error: null,
         filterState: {
             selectedCounty: null,
             selectedFacility: null,
@@ -23,20 +25,29 @@ export function useDataStore() {
         }
     });
 
+    // Destructure primitive values to prevent infinite re-renders
+    const { selectedCounty, selectedFacility, category } = state.filterState;
+
     // Load initial data
     useEffect(() => {
         const loadInitialData = async () => {
-            setState(prev => ({ ...prev, loading: true }));
+            setState(prev => ({ ...prev, loading: true, error: null }));
             try {
                 const counties = await dataService.getCounties();
                 setState(prev => ({
                     ...prev,
                     counties,
-                    loading: false
+                    loading: false,
+                    error: null
                 }));
             } catch (error) {
+                const errorMessage = 'Unable to connect to the server. Please check your network connection or contact support.';
                 console.error('Error loading initial data:', error);
-                setState(prev => ({ ...prev, loading: false }));
+                setState(prev => ({ 
+                    ...prev, 
+                    loading: false,
+                    error: errorMessage
+                }));
             }
         };
 
@@ -46,76 +57,77 @@ export function useDataStore() {
     // Load facilities when county changes
     useEffect(() => {
         const loadFacilities = async () => {
-            if (state.filterState.selectedCounty) {
-                setState(prev => ({ ...prev, loading: true }));
+            if (selectedCounty) {
+                setState(prev => ({ ...prev, loading: true, error: null }));
                 try {
-                    const facilities = await dataService.getFacilitiesByCounty(state.filterState.selectedCounty);
+                    const facilities = await dataService.getFacilitiesByCounty(selectedCounty);
                     setState(prev => ({
                         ...prev,
                         facilities,
-                        loading: false
+                        loading: false,
+                        error: null
                     }));
                 } catch (error) {
+                    const errorMessage = 'Unable to load facilities. Please try again.';
                     console.error('Error loading facilities:', error);
-                    setState(prev => ({ ...prev, loading: false }));
+                    setState(prev => ({ 
+                        ...prev, 
+                        loading: false,
+                        error: errorMessage
+                    }));
                 }
             } else {
-                setState(prev => ({ ...prev, facilities: [] }));
+                setState(prev => ({ ...prev, facilities: [], error: null }));
             }
         };
 
         loadFacilities();
-    }, [state.filterState.selectedCounty]);
+    }, [selectedCounty]);
 
     // Load dashboard cards when filters or category change
     useEffect(() => {
         const loadDashboardData = async () => {
-            // Only set loading if we don't already have cards for this combination
-            const hasExistingData = state.dashboardCards.length > 0;
-            if (!hasExistingData) {
-                setState(prev => ({ ...prev, loading: true }));
-            }
+            setState(prev => ({ ...prev, loading: true, error: null }));
             
             try {
                 let cards: DashboardCard[] = [];
 
-                if (state.filterState.category === 'hts') {
-                    const htsData = await dataService.getHTSData(state.filterState.selectedFacility || undefined);
+                if (category === 'hts') {
+                    const htsData = await dataService.getHTSData(selectedFacility || undefined);
                     cards = dataService.convertHTSToCards(htsData);
-                } else if (state.filterState.category === 'care-treatment') {
-                    const careData = await dataService.getCareAndTreatmentData(state.filterState.selectedFacility || undefined);
+                } else if (category === 'care-treatment') {
+                    const careData = await dataService.getCareAndTreatmentData(selectedFacility || undefined);
                     cards = dataService.convertCareAndTreatmentToCards(careData);
-                } else if (state.filterState.category === 'dashboard') {
-                    const dashboardData = await dataService.getDashboardData(state.filterState.selectedFacility || undefined);
+                } else if (category === 'dashboard') {
+                    const dashboardData = await dataService.getDashboardData(selectedFacility || undefined);
                     cards = dataService.convertDashboardToCards(dashboardData);
                 }
 
                 setState(prev => ({
                     ...prev,
                     dashboardCards: cards,
-                    loading: false
+                    loading: false,
+                    error: null
                 }));
             } catch (error) {
+                const errorMessage = 'Unable to load dashboard data. Please try again.';
                 console.error('Error loading dashboard data:', error);
                 setState(prev => ({
                     ...prev,
                     dashboardCards: [],
-                    loading: false
+                    loading: false,
+                    error: errorMessage
                 }));
             }
         };
 
-        // Add a small delay to prevent rapid successive calls
-        const timeoutId = setTimeout(() => {
-            loadDashboardData();
-        }, 100);
-
-        return () => clearTimeout(timeoutId);
-    }, [state.filterState.category, state.filterState.selectedCounty, state.filterState.selectedFacility]);
+        loadDashboardData();
+    }, [category, selectedCounty, selectedFacility]);
 
     const selectCounty = (countyId: string | null) => {
         setState(prev => ({
             ...prev,
+            error: null,
             filterState: {
                 ...prev.filterState,
                 selectedCounty: countyId,
@@ -127,6 +139,7 @@ export function useDataStore() {
     const selectFacility = (facilityId: string | null) => {
         setState(prev => ({
             ...prev,
+            error: null,
             filterState: {
                 ...prev.filterState,
                 selectedFacility: facilityId
@@ -137,6 +150,7 @@ export function useDataStore() {
     const setCategory = (category: CategoryType) => {
         setState(prev => ({
             ...prev,
+            error: null,
             filterState: {
                 ...prev.filterState,
                 category
@@ -149,6 +163,7 @@ export function useDataStore() {
         facilities: state.facilities,
         dashboardCards: state.dashboardCards,
         loading: state.loading,
+        error: state.error,
         filterState: state.filterState,
         selectCounty,
         selectFacility,
