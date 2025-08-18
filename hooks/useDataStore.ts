@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { County, Facility, DashboardCard, CategoryType, FilterState } from '@/types';
+import { County, Facility, DashboardCard, CategoryType, FilterState, DemographicData } from '@/types';
 import { dataService } from '@/services/dataService';
 import { useDateRange } from '@/contexts/DateRangeContext';
 
@@ -7,6 +7,7 @@ interface DataStoreState {
     counties: County[];
     facilities: Facility[];
     dashboardCards: DashboardCard[];
+    demographicData: DemographicData | null;
     loading: boolean;
     error: string | null;
     filterState: FilterState;
@@ -18,6 +19,7 @@ export function useDataStore() {
         counties: [],
         facilities: [],
         dashboardCards: [],
+        demographicData: null,
         loading: true,
         error: null,
         filterState: {
@@ -127,6 +129,38 @@ export function useDataStore() {
         loadDashboardData();
     }, [category, selectedCounty, selectedFacility, startDate, endDate]);
 
+    // Load demographic data when facility is selected
+    useEffect(() => {
+        const loadDemographicData = async () => {
+            if (selectedFacility && category === 'hts') {
+                setState(prev => ({ ...prev, loading: true, error: null }));
+                
+                try {
+                    const demographicData = await dataService.getFacilityDemographicData(selectedFacility, startDate, endDate);
+                    setState(prev => ({
+                        ...prev,
+                        demographicData,
+                        loading: false,
+                        error: null
+                    }));
+                } catch (error) {
+                    const errorMessage = 'Unable to load facility demographic data. Please try again.';
+                    console.error('Error loading demographic data:', error);
+                    setState(prev => ({
+                        ...prev,
+                        demographicData: null,
+                        loading: false,
+                        error: errorMessage
+                    }));
+                }
+            } else {
+                setState(prev => ({ ...prev, demographicData: null }));
+            }
+        };
+
+        loadDemographicData();
+    }, [selectedFacility, category, startDate, endDate]);
+
     const selectCounty = (countyId: string | null) => {
         setState(prev => ({
             ...prev,
@@ -165,6 +199,7 @@ export function useDataStore() {
         counties: state.counties,
         facilities: state.facilities,
         dashboardCards: state.dashboardCards,
+        demographicData: state.demographicData,
         loading: state.loading,
         error: state.error,
         filterState: state.filterState,

@@ -1,4 +1,5 @@
 import { County, Facility, HTSData, CareAndTreatmentData, DashboardCard, DashboardData, APILocation } from '@/types';
+import { DemographicIndicator, DemographicData } from '@/types';
 import { API_BASE_URL, FALLBACK_API_URL } from '@/constants/api';
 
 interface HTSIndicator {
@@ -294,6 +295,105 @@ class DataService {
         }
     }
 
+    async getFacilityDemographicData(facilityId: string, startDate?: Date, endDate?: Date): Promise<DemographicData> {
+        try {
+            const startDateStr = startDate ? startDate.toISOString().split('T')[0] : new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+            const endDateStr = endDate ? endDate.toISOString().split('T')[0] : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+
+            const url = `${FALLBACK_API_URL}/summary/?reportdept=HTS_UPTAKE&modality=NEW_TESTING&locationid=${facilityId}&startdate=${startDateStr}&enddate=${endDateStr}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                mode: 'cors'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const indicators: DemographicIndicator[] = await response.json();
+            
+            // Process the data to calculate totals and group by age
+            const totalMale = indicators
+                .filter(ind => ind.disagrgender === 'male')
+                .reduce((sum, ind) => sum + ind.total_value, 0);
+            
+            const totalFemale = indicators
+                .filter(ind => ind.disagrgender === 'female')
+                .reduce((sum, ind) => sum + ind.total_value, 0);
+            
+            const totalTests = totalMale + totalFemale;
+
+            // Group by age groups
+            const ageGroupMap = new Map<string, { male: number; female: number }>();
+            
+            indicators.forEach(ind => {
+                const ageGroup = ind.disagragegroup;
+                if (!ageGroupMap.has(ageGroup)) {
+                    ageGroupMap.set(ageGroup, { male: 0, female: 0 });
+                }
+                
+                const group = ageGroupMap.get(ageGroup)!;
+                if (ind.disagrgender === 'male') {
+                    group.male += ind.total_value;
+                } else {
+                    group.female += ind.total_value;
+                }
+            });
+
+            // Convert to array and sort by age
+            const ageGroups = Array.from(ageGroupMap.entries())
+                .map(([ageGroup, data]) => ({
+                    ageGroup,
+                    male: data.male,
+                    female: data.female,
+                    total: data.male + data.female
+                }))
+                .sort((a, b) => {
+                    // Custom sort for age groups
+                    const getAgeOrder = (age: string) => {
+                        if (age === '<1') return 0;
+                        if (age === '1-4') return 1;
+                        if (age === '5-9') return 2;
+                        if (age === '10-14') return 3;
+                        if (age === '15-19') return 4;
+                        if (age === '20-24') return 5;
+                        if (age === '25-29') return 6;
+                        if (age === '30-34') return 7;
+                        if (age === '35-39') return 8;
+                        if (age === '40-44') return 9;
+                        if (age === '45-49') return 10;
+                        if (age === '50-54') return 11;
+                        if (age === '55-59') return 12;
+                        if (age === '60-64') return 13;
+                        if (age === '65-300') return 14;
+                        return 15;
+                    };
+                    return getAgeOrder(a.ageGroup) - getAgeOrder(b.ageGroup);
+                });
+
+            return {
+                indicators,
+                totalMale,
+                totalFemale,
+                totalTests,
+                ageGroups
+            };
+        } catch (error) {
+            console.error('Error fetching facility demographic data:', error);
+            return {
+                indicators: [],
+                totalMale: 0,
+                totalFemale: 0,
+                totalTests: 0,
+                ageGroups: []
+            };
+        }
+    }
 
     async getCareAndTreatmentData(facilityId?: string): Promise<CareAndTreatmentData> {
         try {

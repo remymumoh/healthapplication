@@ -60,6 +60,14 @@ export default function HTSScreen() {
     return "HTS Services"
   }
 
+  const getSelectedFacilityName = () => {
+    if (filterState.selectedFacility) {
+      const facility = facilities.find((f) => f.id === filterState.selectedFacility)
+      return facility?.name
+    }
+    return undefined
+  }
+
   const getTopBarSubtitle = () => {
     return "HIV Testing Services Dashboard"
   }
@@ -96,6 +104,8 @@ export default function HTSScreen() {
           facilities={facilities}
           dashboardCards={dashboardCards}
           loading={loading}
+          demographicData={useDataStore().demographicData}
+          selectedFacilityName={getSelectedFacilityName()}
         />
       </View>
 

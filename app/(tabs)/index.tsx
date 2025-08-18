@@ -86,6 +86,7 @@ export default function DashboardScreen() {
                     facilities={facilities}
                     dashboardCards={dashboardCards}
                     loading={loading}
+                    demographicData={null}
                 />
             </View>
 

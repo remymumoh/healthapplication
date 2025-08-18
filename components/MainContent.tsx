@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { DashboardGrid } from './DashboardGrid';
-import { County, Facility, DashboardCard, CategoryType } from '@/types';
+import { DemographicChart } from './DemographicChart';
+import { County, Facility, DashboardCard, CategoryType, DemographicData } from '@/types';
 
 interface Props {
     category: CategoryType;
@@ -11,6 +12,8 @@ interface Props {
     facilities: Facility[];
     dashboardCards: DashboardCard[];
     loading: boolean;
+    demographicData: DemographicData | null;
+    selectedFacilityName?: string;
 }
 
 export function MainContent({
@@ -20,7 +23,9 @@ export function MainContent({
                                 counties,
                                 facilities,
                                 dashboardCards,
-                                loading
+                                loading,
+                                demographicData,
+                                selectedFacilityName
                             }: Props) {
     if (loading) {
         return (
@@ -29,6 +34,18 @@ export function MainContent({
                     <ActivityIndicator size="large" color="#3b82f6" />
                     <Text style={styles.loadingText}>Loading data...</Text>
                 </View>
+            </View>
+        );
+    }
+
+    // Show demographic chart when facility is selected and we have demographic data
+    if (selectedFacility && demographicData && category === 'hts' && selectedFacilityName) {
+        return (
+            <View style={styles.container}>
+                <DemographicChart 
+                    data={demographicData} 
+                    facilityName={selectedFacilityName}
+                />
             </View>
         );
     }

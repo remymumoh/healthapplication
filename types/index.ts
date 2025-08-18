@@ -58,6 +58,28 @@ export interface DashboardData {
     stiCases: number;
 }
 
+export interface DemographicIndicator {
+    indicatorid: string;
+    indicator_name: string;
+    disagrgender: string;
+    disagragegroup: string;
+    locationid: string;
+    total_value: number;
+}
+
+export interface DemographicData {
+    indicators: DemographicIndicator[];
+    totalMale: number;
+    totalFemale: number;
+    totalTests: number;
+    ageGroups: {
+        ageGroup: string;
+        male: number;
+        female: number;
+        total: number;
+    }[];
+}
+
 export interface APILocation {
     mflcode: string;
     facility: string;

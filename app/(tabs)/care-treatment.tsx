@@ -96,6 +96,7 @@ export default function CareAndTreatmentScreen() {
           facilities={facilities}
           dashboardCards={dashboardCards}
           loading={loading}
+          demographicData={null}
         />
       </View>
 
