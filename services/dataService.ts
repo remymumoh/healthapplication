@@ -92,7 +92,7 @@ class DataService {
                         county: county.name,
                         subcounty: 'Default Subcounty',
                         ward: 'Default Ward',
-                        type: facility.type
+                        type: facility.type,
                         program: 'HTS'
                     }))
             );
