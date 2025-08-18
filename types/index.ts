@@ -2,6 +2,7 @@ export interface County {
     id: string;
     name: string;
     code: string;
+    facilityCount?: number;
 }
 
 export interface Facility {
@@ -9,6 +10,9 @@ export interface Facility {
     name: string;
     type: string;
     county: string;
+    subcounty?: string;
+    ward?: string;
+    program?: string;
     location: {
         latitude: number;
         longitude: number;

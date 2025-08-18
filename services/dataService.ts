@@ -16,23 +16,6 @@ class DataService {
     private countiesCache: County[] = [];
     private facilitiesCache: Map<string, Facility[]> = new Map();
 
-    // Fallback data for when API is unreachable
-    private fallbackCounties: County[] = [
-        { id: '1', name: 'Nairobi', code: 'NAI' },
-        { id: '2', name: 'Mombasa', code: 'MSA' },
-        { id: '3', name: 'Kisumu', code: 'KSM' },
-        { id: '4', name: 'Nakuru', code: 'NAK' },
-        { id: '5', name: 'Eldoret', code: 'ELD' }
-    ];
-
-    private fallbackFacilities: Facility[] = [
-        { id: '10001', name: 'Kenyatta National Hospital', type: 'Hospital', county: '1', location: { latitude: 0, longitude: 0 } },
-        { id: '10002', name: 'Nairobi Hospital', type: 'Hospital', county: '1', location: { latitude: 0, longitude: 0 } },
-        { id: '10003', name: 'Pumwani Maternity Hospital', type: 'Hospital', county: '1', location: { latitude: 0, longitude: 0 } },
-        { id: '20001', name: 'Coast General Hospital', type: 'Hospital', county: '2', location: { latitude: 0, longitude: 0 } },
-        { id: '20002', name: 'Aga Khan Hospital Mombasa', type: 'Hospital', county: '2', location: { latitude: 0, longitude: 0 } }
-    ];
-
     private htsIndicators: HTSIndicator[] = [
         {
             id: '1',
@@ -74,45 +57,25 @@ class DataService {
         }
 
         try {
-            // Try primary API first, then fallback
-            let response;
-            try {
-                response = await fetch(`${FALLBACK_API_URL}/locations/`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    mode: 'cors'
-                });
-            } catch (primaryError) {
-                console.warn('Primary API unavailable, using fallback data');
-                throw primaryError;
-            }
+            const response = await fetch(`${FALLBACK_API_URL}/locations/`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                mode: 'cors'
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
             const locations: APILocation[] = await response.json();
             this.locationsCache = locations;
             return locations;
         } catch (error) {
-            console.warn('API unavailable, using fallback data:', error);
-            // Return fallback data when API is unreachable
-            this.locationsCache = this.fallbackCounties.flatMap(county => 
-                this.fallbackFacilities
-                    .filter(facility => facility.county === county.id)
-                    .map(facility => ({
-                        mflcode: facility.id,
-                        facility: facility.name,
-                        county: county.name,
-                        subcounty: 'Default Subcounty',
-                        ward: 'Default Ward',
-                        type: facility.type,
-                        program: 'HTS'
-                    }))
-            );
-            return this.locationsCache;
+            console.error('Error fetching locations:', error);
+            throw error;
         }
     }
 
@@ -123,20 +86,27 @@ class DataService {
 
         try {
             const locations = await this.fetchLocations();
-            const uniqueCounties = [...new Set(locations.map(loc => loc.county))];
+            
+            // Get unique counties and sort them alphabetically
+            const uniqueCountyNames = [...new Set(locations.map(loc => loc.county))].sort();
+            
+            // Count facilities per county
+            const countyCounts = new Map<string, number>();
+            locations.forEach(loc => {
+                countyCounts.set(loc.county, (countyCounts.get(loc.county) || 0) + 1);
+            });
 
-            this.countiesCache = uniqueCounties.map((countyName, index) => ({
+            this.countiesCache = uniqueCountyNames.map((countyName, index) => ({
                 id: (index + 1).toString(),
                 name: countyName,
-                code: countyName.substring(0, 3).toUpperCase()
+                code: countyName.substring(0, 3).toUpperCase(),
+                facilityCount: countyCounts.get(countyName) || 0
             }));
 
             return this.countiesCache;
         } catch (error) {
-            console.error('Error processing counties:', error);
-            // Return fallback counties when API is unreachable
-            this.countiesCache = this.fallbackCounties;
-            return this.countiesCache;
+            console.error('Error fetching counties:', error);
+            return [];
         }
     }
 
@@ -154,13 +124,18 @@ class DataService {
                 return [];
             }
 
+            // Filter and sort facilities by county
             const countyFacilities = locations
                 .filter(loc => loc.county === selectedCounty.name)
+                .sort((a, b) => a.facility.localeCompare(b.facility))
                 .map((loc) => ({
                     id: loc.mflcode,
                     name: loc.facility,
                     type: loc.type,
                     county: countyId,
+                    subcounty: loc.subcounty,
+                    ward: loc.ward,
+                    program: loc.program,
                     location: {
                         latitude: 0,
                         longitude: 0
@@ -170,11 +145,8 @@ class DataService {
             this.facilitiesCache.set(countyId, countyFacilities);
             return countyFacilities;
         } catch (error) {
-            console.error('Error fetching facilities:', error);
-            // Return fallback facilities for the county
-            const fallbackForCounty = this.fallbackFacilities.filter(f => f.county === countyId);
-            this.facilitiesCache.set(countyId, fallbackForCounty);
-            return fallbackForCounty;
+            console.error('Error fetching facilities for county:', error);
+            return [];
         }
     }
 

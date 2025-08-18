@@ -136,7 +136,7 @@ export function FilterSidebar({
                   <View style={styles.countyContent}>
                     <Text style={styles.countyName}>{county.name}</Text>
                     <Text style={styles.facilityCount}>
-                      {countyFacilities.length} facilities
+                      {county.facilityCount || countyFacilities.length} facilities
                     </Text>
                   </View>
                   <ChevronRight 
