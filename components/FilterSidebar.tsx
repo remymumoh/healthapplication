@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from "react-native"
-import { MapPin, Building2, X, Search, ChevronRight, Calendar } from "lucide-react-native"
+import { MapPin, Building2, X, Search, ChevronRight, Calendar, Users, Activity, ChevronDown } from "lucide-react-native"
 import { useState, useMemo } from "react"
 import type { County, Facility, CategoryType } from "@/types"
 import CalendarFilter from "./CalendarFilter"
@@ -68,12 +68,28 @@ export function FilterSidebar({
     setSearchQuery("")
   }
 
+  const getFacilityIcon = (type: string) => {
+    if (type.toLowerCase().includes('kp')) {
+      return { icon: Building2, color: '#a855f7', bgColor: '#f3e8ff' }
+    }
+    return { icon: Building2, color: '#f97316', bgColor: '#fed7aa' }
+  }
+
+  const generateMockStats = () => {
+    return {
+      patients: Math.floor(Math.random() * 2000) + 500,
+      tests: Math.floor(Math.random() * 1000) + 200
+    }
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <MapPin size={24} color="#ffffff" />
+          <View style={styles.headerIcon}>
+            <MapPin size={24} color="#ffffff" />
+          </View>
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Healthcare Facilities</Text>
             <Text style={styles.headerSubtitle}>Browse by location</Text>
@@ -86,30 +102,6 @@ export function FilterSidebar({
         >
           <X size={24} color="#ffffff" />
         </TouchableOpacity>
-      </View>
-
-      {/* Date Range Selector */}
-      <View style={styles.dateSection}>
-        <CalendarFilter />
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Search size={16} color="#9ca3af" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search counties..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#9ca3af"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-              <X size={16} color="#9ca3af" />
-            </TouchableOpacity>
-          )}
-        </View>
       </View>
 
       {/* Counties List */}
@@ -130,8 +122,8 @@ export function FilterSidebar({
                   onPress={() => handleCountySelect(county)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.countyIcon}>
-                    <MapPin size={20} color="#3b82f6" />
+                  <View style={styles.countyIconContainer}>
+                    <MapPin size={20} color="#4f46e5" />
                   </View>
                   <View style={styles.countyContent}>
                     <Text style={styles.countyName}>{county.name}</Text>
@@ -139,7 +131,7 @@ export function FilterSidebar({
                       {county.facilityCount || countyFacilities.length} facilities
                     </Text>
                   </View>
-                  <ChevronRight 
+                  <ChevronDown 
                     size={20} 
                     color="#9ca3af" 
                     style={[
@@ -157,33 +149,52 @@ export function FilterSidebar({
                         <Text style={styles.loadingText}>Loading facilities...</Text>
                       </View>
                     ) : countyFacilities.length > 0 ? (
-                      countyFacilities.map((facility) => (
-                        <TouchableOpacity
-                          key={facility.id}
-                          style={[
-                            styles.facilityItem,
-                            selectedFacility === facility.id && styles.facilityItemSelected
-                          ]}
-                          onPress={() => handleFacilitySelect(facility)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.facilityIcon}>
-                            <Building2 size={16} color="#6b7280" />
-                          </View>
-                          <View style={styles.facilityContent}>
-                            <Text style={[
-                              styles.facilityName,
-                              selectedFacility === facility.id && styles.facilityNameSelected
-                            ]}>
-                              {facility.name}
-                            </Text>
-                            <Text style={styles.facilityType}>{facility.type}</Text>
-                          </View>
-                          {selectedFacility === facility.id && (
-                            <View style={styles.selectedIndicator} />
-                          )}
-                        </TouchableOpacity>
-                      ))
+                      countyFacilities.map((facility) => {
+                        const facilityIcon = getFacilityIcon(facility.type)
+                        const stats = generateMockStats()
+                        
+                        return (
+                          <TouchableOpacity
+                            key={facility.id}
+                            style={[
+                              styles.facilityCard,
+                              selectedFacility === facility.id && styles.facilityCardSelected
+                            ]}
+                            onPress={() => handleFacilitySelect(facility)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.facilityHeader}>
+                              <View style={[styles.facilityIconContainer, { backgroundColor: facilityIcon.bgColor }]}>
+                                <facilityIcon.icon size={20} color={facilityIcon.color} />
+                              </View>
+                              <View style={styles.facilityInfo}>
+                                <Text style={styles.facilityName} numberOfLines={2}>
+                                  {facility.name}
+                                </Text>
+                                <View style={styles.facilityMeta}>
+                                  <Text style={styles.facilityType}>
+                                    {facility.type}
+                                  </Text>
+                                  <Text style={styles.facilityProgram}>
+                                    • {facility.program || 'N/A'}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                            
+                            <View style={styles.facilityStats}>
+                              <View style={styles.statItem}>
+                                <Users size={14} color="#6b7280" />
+                                <Text style={styles.statValue}>{stats.patients.toLocaleString()}</Text>
+                              </View>
+                              <View style={styles.statItem}>
+                                <Activity size={14} color="#6b7280" />
+                                <Text style={styles.statValue}>{stats.tests.toLocaleString()}</Text>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        )
+                      })
                     ) : (
                       <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>No facilities found</Text>
@@ -209,7 +220,7 @@ export function FilterSidebar({
 
 const styles = StyleSheet.create({
   container: {
-    width: 320,
+    width: 380,
     backgroundColor: "#ffffff",
     height: "100%",
     position: "absolute",
@@ -231,19 +242,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 20,
     paddingTop: 24,
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#4f46e5",
   },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
   },
+  headerIcon: {
+    width: 48,
+    height: 48,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
   headerText: {
-    marginLeft: 12,
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "Inter-Bold",
     color: "#ffffff",
     marginBottom: 2,
@@ -251,56 +270,25 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     fontFamily: "Inter-Regular",
-    color: "#bfdbfe",
+    color: "rgba(255, 255, 255, 0.8)",
   },
   closeButton: {
-    padding: 4,
-  },
-  dateSection: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    backgroundColor: "#ffffff",
-  },
-  searchContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    backgroundColor: "#ffffff",
-  },
-  searchInputContainer: {
-    flexDirection: "row",
+    width: 40,
+    height: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 20,
     alignItems: "center",
-    backgroundColor: "#f9fafb",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: "Inter-Regular",
-    color: "#374151",
-    paddingVertical: 2,
-  },
-  clearButton: {
-    padding: 4,
-    marginLeft: 8,
+    justifyContent: "center",
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#f8fafc",
   },
   countiesList: {
     padding: 16,
   },
   countyContainer: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
   countyItem: {
     flexDirection: "row",
@@ -309,7 +297,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#e2e8f0",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -320,14 +308,14 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   countyItemExpanded: {
-    borderColor: "#3b82f6",
-    backgroundColor: "#eff6ff",
+    borderColor: "#4f46e5",
+    backgroundColor: "#f8faff",
   },
-  countyIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: "#eff6ff",
-    borderRadius: 20,
+  countyIconContainer: {
+    width: 44,
+    height: 44,
+    backgroundColor: "#eef2ff",
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -336,71 +324,109 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   countyName: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Inter-SemiBold",
-    color: "#111827",
+    color: "#1e293b",
     marginBottom: 2,
   },
   facilityCount: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Inter-Regular",
-    color: "#6b7280",
+    color: "#64748b",
   },
   chevron: {
     marginLeft: 8,
+    transform: [{ rotate: "0deg" }],
   },
   chevronExpanded: {
-    transform: [{ rotate: "90deg" }],
+    transform: [{ rotate: "180deg" }],
   },
   facilitiesContainer: {
     marginTop: 8,
-    marginLeft: 52,
-    backgroundColor: "#f9fafb",
-    borderRadius: 8,
-    overflow: "hidden",
+    paddingLeft: 8,
+    gap: 8,
   },
-  facilityItem: {
+  facilityCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  facilityCardSelected: {
+    borderColor: "#4f46e5",
+    backgroundColor: "#f8faff",
+  },
+  facilityHeader: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    alignItems: "flex-start",
+    marginBottom: 12,
   },
-  facilityItemSelected: {
-    backgroundColor: "#eff6ff",
-  },
-  facilityIcon: {
-    width: 32,
-    height: 32,
-    backgroundColor: "#f3f4f6",
-    borderRadius: 16,
+  facilityIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
-  facilityContent: {
+  facilityInfo: {
     flex: 1,
   },
   facilityName: {
-    fontSize: 14,
-    fontFamily: "Inter-Medium",
-    color: "#374151",
-    marginBottom: 2,
+    fontSize: 16,
+    fontFamily: "Inter-SemiBold",
+    color: "#1e293b",
+    marginBottom: 4,
+    lineHeight: 20,
   },
-  facilityNameSelected: {
-    color: "#3b82f6",
+  facilityMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
   facilityType: {
-    fontSize: 12,
-    fontFamily: "Inter-Regular",
-    color: "#9ca3af",
+    fontSize: 13,
+    fontFamily: "Inter-Medium",
+    color: "#f97316",
   },
-  selectedIndicator: {
-    width: 8,
-    height: 8,
-    backgroundColor: "#3b82f6",
-    borderRadius: 4,
-    marginLeft: 8,
+  facilityProgram: {
+    fontSize: 13,
+    fontFamily: "Inter-Regular",
+    color: "#64748b",
+    marginLeft: 4,
+  },
+  facilityStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flex: 1,
+    marginHorizontal: 4,
+    justifyContent: "center",
+  },
+  statValue: {
+    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
+    color: "#374151",
+    marginLeft: 6,
   },
   loadingContainer: {
     padding: 20,
